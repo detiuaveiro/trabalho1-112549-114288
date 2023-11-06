@@ -171,7 +171,7 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (width >= 0);
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
-  // Insert your code here!
+  // Insert your code here! 
 }
 
 /// Destroy the image pointed to by (*imgp).
@@ -491,3 +491,4 @@ void ImageBlur(Image img, int dx, int dy) { ///
   // Insert your code here!
 }
 
+// TESTE COMENTARIO
