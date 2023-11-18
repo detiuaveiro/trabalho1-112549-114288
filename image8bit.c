@@ -10,8 +10,10 @@
 /// 2013, 2023
 
 // Student authors (fill in below):
-// NMec:  Name:
-// 
+// NMec: 112549
+//       114288
+// Name:José Carlos Wanderley Galdino Netp 
+//      Miguel Rosa Vicente
 // 
 // 
 // Date:
@@ -171,7 +173,10 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (width >= 0);
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
-  // Insert your code here! 
+  
+  
+
+
 }
 
 /// Destroy the image pointed to by (*imgp).
