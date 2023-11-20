@@ -1,3 +1,4 @@
+
 /// image8bit - A simple image processing module.
 ///
 /// This module is part of a programming project
@@ -174,9 +175,32 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
   
+  Image newImg = (Image)malloc(sizeof(Image));
+
+  if (!check(newImg != NULL, "Failed to allocate memory for image"))
+  {
+    return NULL;
+  }
   
+  newImg->width = width;
+  newImg->height = height;
+  newImg->maxval = maxval;
 
+  newImg->pixel = (uint8*)malloc(width * height * sizeof(uint8));
 
+  if (!check(newImg->pixel != NULL, "Failed to allocate memory for pixels"))
+  {
+    free(newImg);
+    return NULL;
+  }
+  
+  for (size_t i = 0; i < width*height; i++)
+  { 
+    newImg->pixel[i] = 0;
+  }
+  
+  return newImg;
+  
 }
 
 /// Destroy the image pointed to by (*imgp).
@@ -186,7 +210,9 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 /// Should never fail, and should preserve global errno/errCause.
 void ImageDestroy(Image* imgp) { ///
   assert (imgp != NULL);
-  // Insert your code here!
+  free((*imgp)->pixel);
+  free(*imgp);
+  imgp = NULL;
 }
 
 
@@ -496,4 +522,3 @@ void ImageBlur(Image img, int dx, int dy) { ///
   // Insert your code here!
 }
 
-// TESTE COMENTARIO
