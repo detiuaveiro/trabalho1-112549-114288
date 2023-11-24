@@ -362,9 +362,10 @@ int ImageValidPos(Image img, int x, int y)
 
 /// Check if rectangular area (x,y,w,h) is completely inside img.
 int ImageValidRect(Image img, int x, int y, int w, int h)
-{ ///
+{ 
   assert(img != NULL);
-  // Insert your code here!
+  return(0 <= x && x + w <= img->width) && (0 <= y && y + h <= img->height);
+
 }
 
 /// Pixel get & set operations
@@ -381,7 +382,7 @@ static inline int G(Image img, int x, int y)
 {
   int index;
   int width = img->width;
-  index = width*(y-1)+x-1;
+  index = width*(y)+x;
   assert(0 <= index && index < img->width * img->height);
   return index;
 }
@@ -498,11 +499,11 @@ Image ImageRotate(Image img)
     return NULL;
   }
   
-  for (size_t x = 1; x < img->width; x++)
+  for (size_t x = 0; x < img->width; x++)
   {
-    for (size_t y = 1; y < img->height; y++)
+    for (size_t y = 0; y < img->height; y++)
     {
-      ImageSetPixel(newImage,y,img->width-x,ImageGetPixel(img, x, y));
+      ImageSetPixel(newImage,y,img->width-x-1,ImageGetPixel(img, x, y));
     }
   }
   
@@ -521,7 +522,22 @@ Image ImageRotate(Image img)
 Image ImageMirror(Image img)
 { ///
   assert(img != NULL);
-  // Insert your code here!
+  
+  Image newImage = ImageCreate(img->width, img->height, img->maxval);
+  if (newImage == NULL)
+  {
+    return NULL;
+  }
+
+  for (size_t x = 0; x < img->width; x++)
+  {
+    for (size_t y = 0; y < img->height; y++)
+    {
+      ImageSetPixel(newImage, x, y, ImageGetPixel(img, img->width - x - 1, y));
+    }
+  }
+
+  return newImage;
 }
 
 /// Crop a rectangular subimage from img.
@@ -540,7 +556,23 @@ Image ImageCrop(Image img, int x, int y, int w, int h)
 { ///
   assert(img != NULL);
   assert(ImageValidRect(img, x, y, w, h));
-  // Insert your code here!
+  
+  Image newImage = ImageCreate(w, h, img->maxval);
+  
+  if (newImage == NULL)
+  {
+    return NULL;
+  }
+
+  for (size_t i = 0; i < w; i++)
+  {
+    for (size_t j = 0; j < h; j++)
+    {
+      ImageSetPixel(newImage, i, j, ImageGetPixel(img, x + i, y + j));
+    }
+  }
+  
+  return newImage;
 }
 
 /// Operations on two images
@@ -554,7 +586,16 @@ void ImagePaste(Image img1, int x, int y, Image img2)
   assert(img1 != NULL);
   assert(img2 != NULL);
   assert(ImageValidRect(img1, x, y, img2->width, img2->height));
-  // Insert your code here!
+  
+  for (size_t i = 0; i < img2->width; i++)
+  {
+    for (size_t j = 0; j < img2->height; j++)
+    {
+      ImageSetPixel(img1, x + i, y + j, ImageGetPixel(img2, i, j));
+    }
+
+  }
+
 }
 
 /// Blend an image into a larger image.
@@ -568,7 +609,29 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha)
   assert(img1 != NULL);
   assert(img2 != NULL);
   assert(ImageValidRect(img1, x, y, img2->width, img2->height));
-  // Insert your code here!
+  
+  for (size_t i = 0; i < img2->width; i++)
+  {
+    for (size_t j = 0; j < img2->height; j++)
+    {
+      double aux = ImageGetPixel(img1, x + i, y + j) * (1 - alpha) + ImageGetPixel(img2, i, j) * alpha;
+
+      if (aux > img1->maxval)
+      {
+        ImageSetPixel(img1, x + i, y + j, img1->maxval);
+      }
+      else if (aux < 0)
+      {
+        ImageSetPixel(img1, x + i, y + j, 0);
+      }
+      else
+      {
+        ImageSetPixel(img1, x + i, y + j, (uint8)round(aux));
+      }
+    }
+  }
+
+
 }
 
 /// Compare an image to a subimage of a larger image.
@@ -579,7 +642,28 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2)
   assert(img1 != NULL);
   assert(img2 != NULL);
   assert(ImageValidPos(img1, x, y));
-  // Insert your code here!
+  
+  if (!ImageValidRect(img1, x, y, img2->width, img2->height))
+  {
+    return 0;
+  }
+
+  int width = ImageWidth(img2);
+  int height = ImageHeight(img2);
+
+  
+  for (size_t i = 0; i < width; i++)
+  {
+    for (size_t j = 0; j < height; j++)
+    {
+
+      if (ImageGetPixel(img1, x + i, y + j) != ImageGetPixel(img2, i, j))
+      {
+        return 0;
+      }
+    }
+  }
+  return 1;
 }
 
 /// Locate a subimage inside another image.
@@ -590,7 +674,26 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2)
 { ///
   assert(img1 != NULL);
   assert(img2 != NULL);
-  // Insert your code here!
+  
+  int height1 = ImageHeight(img1);
+  int width1 = ImageWidth(img1);
+  int height2 = ImageHeight(img2);
+  int width2 = ImageWidth(img2);
+  
+  for (size_t i = 0; i < width1 - width2; i++)
+  {
+    for (size_t j = 0; j < height1 - height2; j++)
+    {
+      if (ImageMatchSubImage(img1, i, j, img2))
+      {
+        *px = i;
+        *py = j;
+        return 1;
+      }
+    }
+  }
+
+  return 0;
 }
 
 /// Filtering
