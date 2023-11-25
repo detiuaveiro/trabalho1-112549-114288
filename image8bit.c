@@ -129,10 +129,7 @@ char *ImageErrMsg()
 //
 // This technique has some legibility issues and is not always applicable,
 // but it is quite concise, and concentrates cleanup code in a single place.
-//
-// See example utilization in ImageLoad and ImageSave.
-//
-// (You are not required to use this in your code!)
+
 
 // Check a condition and set errCause to failmsg in case of failure.
 // This may be used to chain a sequence of operations and verify its success.
@@ -150,14 +147,14 @@ void ImageInit(void)
 { ///
   InstrCalibrate();
   InstrName[0] = "pixmem"; // InstrCount[0] will count pixel array acesses
-  // Name other counters here...
+  InstrName[1] = "LocCount"; //
+
 }
 
 // Macros to simplify accessing instrumentation counters:
 #define PIXMEM InstrCount[0]
-// Add more macros here...
+#define LocateComparisons InstrCount[1]
 
-// TIP: Search for PIXMEM or InstrCount to see where it is incremented!
 
 /// Image management functions
 
@@ -210,10 +207,6 @@ void ImageDestroy(Image *imgp)
   imgp = NULL;
 }
 
-/// PGM file operations
-
-// See also:
-// PGM format specification: http://netpbm.sourceforge.net/doc/pgm.html
 
 // Match and skip 0 or more comment lines in file f.
 // Comments start with a # and continue until the end-of-line, inclusive.
@@ -381,9 +374,9 @@ int ImageValidRect(Image img, int x, int y, int w, int h)
 static inline int G(Image img, int x, int y)
 {
   int index;
-  int width = img->width;
+  int width = ImageWidth(img);
   index = width*(y)+x;
-  assert(0 <= index && index < img->width * img->height);
+  assert(0 <= index && index < width * ImageHeight(img));
   return index;
 }
 
@@ -418,9 +411,10 @@ void ImageSetPixel(Image img, int x, int y, uint8 level)
 void ImageNegative(Image img)
 { ///
   assert(img != NULL);
-  for (size_t i = 0; i < img->width*img->height; i++)
+  int maxval = ImageMaxval(img);
+  for (size_t i = 0; i < ImageWidth(img)*ImageHeight(img); i++)
   {
-    img->pixel[i] = img->maxval - img->pixel[i];
+    img->pixel[i] = maxval - img->pixel[i];
   }
   
   
@@ -432,6 +426,7 @@ void ImageNegative(Image img)
 void ImageThreshold(Image img, uint8 thr)
 { ///
   assert(img != NULL);
+  int maxval = ImageMaxval(img);
   for (size_t i = 0; i < img->width*img->height; i++)
   {
     if (img->pixel[i] < thr)
@@ -440,7 +435,7 @@ void ImageThreshold(Image img, uint8 thr)
     }
     else
     {
-      img->pixel[i] = img->maxval;
+      img->pixel[i] = maxval;
     }
   }
 }
@@ -453,13 +448,14 @@ void ImageBrighten(Image img, double factor)
 { ///
   assert(img != NULL);
   assert (factor >= 0.0);
-  for (size_t i = 0; i < img->width*img->height; i++)
+  int maxval = ImageMaxval(img);
+  for (size_t i = 0; i < ImageWidth(img)*ImageHeight(img); i++)
   {
     double aux = img->pixel[i] * factor;
 
-    if (aux > img->maxval)
+    if (aux > maxval)
     {
-      img->pixel[i] = img->maxval;
+      img->pixel[i] = maxval;
     }
     else
     {
@@ -656,9 +652,9 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2)
   {
     for (size_t j = 0; j < height; j++)
     {
-
+      LocateComparisons++;
       if (ImageGetPixel(img1, x + i, y + j) != ImageGetPixel(img2, i, j))
-      {
+      { 
         return 0;
       }
     }
@@ -674,7 +670,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2)
 { ///
   assert(img1 != NULL);
   assert(img2 != NULL);
-  
+
   int height1 = ImageHeight(img1);
   int width1 = ImageWidth(img1);
   int height2 = ImageHeight(img2);
@@ -684,6 +680,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2)
   {
     for (size_t j = 0; j < height1 - height2; j++)
     {
+      LocateComparisons++;
       if (ImageMatchSubImage(img1, i, j, img2))
       {
         *px = i;
