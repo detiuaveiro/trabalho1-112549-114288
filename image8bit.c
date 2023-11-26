@@ -90,23 +90,24 @@ Image ImageCreate(int width, int height, uint8 maxval)
   assert(height >= 0);
   assert(0 < maxval && maxval <= PixMax);
 
-  Image newImg = (Image)malloc(sizeof(struct image));
+  Image newImg = (Image)malloc(sizeof(struct image)); // Aloca a memória para a imagem
 
-  if (!check(newImg != NULL, "Failed to allocate memory for image"))
+  if (!check(newImg != NULL, "Failed to allocate memory for image")) 
   {
-    return NULL;
+    return NULL; //Caso nao consiga, retorna NULL
   }
 
+  // Atribui os parametros para a imagem
   newImg->width = width;
   newImg->height = height;
   newImg->maxval = maxval;
-
-  newImg->pixel = (uint8 *)calloc(width * height, sizeof(uint8));
+  
+  // Aloca a memória para o array de pixels da imagem
   newImg->pixel = (uint8 *)calloc(width * height, sizeof(uint8));
 
   if (!check(newImg->pixel != NULL, "Failed to allocate memory for pixels"))
   {
-    free(newImg);
+    free(newImg); //Caso nao consiga, retorna NULL e libera o espaço da imagem
     return NULL;
   }
 
@@ -121,6 +122,7 @@ Image ImageCreate(int width, int height, uint8 maxval)
 void ImageDestroy(Image *imgp)
 { ///
   assert(imgp != NULL);
+  //Libera o espaço da imagem e do array de pixels
   free((*imgp)->pixel);
   free(*imgp);
   imgp = NULL;
@@ -217,21 +219,21 @@ int ImageSave(Image img, const char *filename)
 int ImageWidth(Image img)
 { ///
   assert(img != NULL);
-  return img->width;
+  return img->width; //Retorna largura
 }
 
 /// Get image width
 int ImageHeight(Image img)
 { ///
   assert(img != NULL);
-  return img->height;
+  return img->height; //Retorna altura
 }
 
 /// Get image maximum gray level
 int ImageMaxval(Image img)
 { ///
   assert(img != NULL);
-  return img->maxval;
+  return img->maxval; //Retorna maxval
 }
 
 /// Pixel stats
@@ -246,8 +248,9 @@ void ImageStats(Image img, uint8 *min, uint8 *max)
   *min = ImageGetPixel(img, 0, 0);
   *max = ImageGetPixel(img, 0, 0);
 
-  
-  for (size_t i = 1; i < img->width*img->height; i++)
+  //Percorre todos os pixels e compara eles com *min e *max, caso tenham um valor de cinza maior
+  //substituem o valor de max, caso seja menor, substituem o valor de min 
+  for (size_t i = 1; i < img->width*img->height; i++) 
   {
     if (img->pixel[i] > *max)
     {
@@ -299,7 +302,7 @@ static inline int G(Image img, int x, int y)
 {
   int index;
   int width = ImageWidth(img);
-  index = width*(y)+x;
+  index = width*(y)+x; //calcula posição do pixel, considerando (0,0) como ponto inicial 
   assert(0 <= index && index < width * ImageHeight(img));
   return index;
 }
@@ -340,7 +343,8 @@ void ImageNegative(Image img)
   int maxval = ImageMaxval(img);
   for (size_t i = 0; i < ImageWidth(img)*ImageHeight(img); i++)
   {
-    img->pixel[i] = maxval - img->pixel[i];
+    //Para todos os pixels subtrai maxval do valor de cinza, conseguindo o negativo
+    img->pixel[i] = maxval - img->pixel[i]; 
   }
   
 }
@@ -353,6 +357,9 @@ void ImageThreshold(Image img, uint8 thr)
 { ///
   assert(img != NULL);
   int maxval = ImageMaxval(img);
+
+  //Loop for que percorre todos os pixels, e caso seu valor de cinza seja menor que a thr, transforma em branco,
+  //caso seja maior, transforma em preto
   for (size_t i = 0; i < img->width*img->height; i++)
   {
     if (img->pixel[i] < thr)
@@ -375,16 +382,21 @@ void ImageBrighten(Image img, double factor)
   assert(img != NULL);
   assert (factor >= 0.0);
   int maxval = ImageMaxval(img);
+  
+  //Percorre todos os pixels
   for (size_t i = 0; i < ImageWidth(img)*ImageHeight(img); i++)
   {
+    //Multiplica o valor do pixel pelo fator
     double aux = img->pixel[i] * factor;
 
     if (aux > maxval)
     {
+      //Certifica-se que o valor não ultrapassa maxval
       img->pixel[i] = maxval;
     }
     else
-    {
+    { 
+      //Arredonda o aux e coloca no lugar do pixel
       img->pixel[i] = (uint8)round(aux);
     }
   }
@@ -424,7 +436,8 @@ Image ImageRotate(Image img)
   {
     return NULL;
   }
-
+  //Percorre todos os pixels da imagem e faz a transformação que permite rotacionar os pixeis
+  //atribuindo os pixels à nova imagem criada
   for (size_t x = 0; x < width; x++)
   {
     for (size_t y = 0; y < height; y++)
@@ -455,6 +468,8 @@ Image ImageMirror(Image img)
     return NULL;
   }
 
+  //Percorre todos os pixels da imagem e faz a transformação que permite esplehar os pixeis
+  //atribuindo os pixels à nova imagem criada
   for (size_t x = 0; x < img->width; x++)
   {
     for (size_t y = 0; y < img->height; y++)
@@ -489,7 +504,7 @@ Image ImageCrop(Image img, int x, int y, int w, int h)
   {
     return NULL;
   }
-
+  //Percorre todos os pixels da imagem e copia os pixels, atribuindo seus valores à nova imagem 
   for (size_t i = 0; i < w; i++)
   {
     for (size_t j = 0; j < h; j++)
@@ -513,6 +528,7 @@ void ImagePaste(Image img1, int x, int y, Image img2)
   assert(img2 != NULL);
   assert(ImageValidRect(img1, x, y, img2->width, img2->height));
   
+  //Percorre todos os pixels da imagem 2 e os cola na posição exata da imagem 1
   for (size_t i = 0; i < img2->width; i++)
   {
     for (size_t j = 0; j < img2->height; j++)
@@ -536,6 +552,8 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha)
   assert(img2 != NULL);
   assert(ImageValidRect(img1, x, y, img2->width, img2->height));
   
+  //Faz a mesma coisa que o anterior, so que desta vez, ao inves de colar valor do pixel integralmente, 
+  //realiza uma operação matematica que faz a imagem 2 parecer translucida sobre a imagem 1
   for (size_t i = 0; i < img2->width; i++)
   {
     for (size_t j = 0; j < img2->height; j++)
@@ -561,6 +579,7 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha)
 /// Compare an image to a subimage of a larger image.
 /// Returns 1 (true) if img2 matches subimage of img1 at pos (x, y).
 /// Returns 0, otherwise.
+
 int ImageMatchSubImage(Image img1, int x, int y, Image img2)
 { ///
   assert(img1 != NULL);
@@ -575,19 +594,24 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2)
   {
     return 0;
   }
-
-  
+  //Percorre todos os pixels da imagem 2 e ve se eles são equivalentes aos pixels da imagem de area(w,h) na 
+  //posição(x,y)
   for (size_t i = 0; i < width; i++)
   {
     for (size_t j = 0; j < height; j++)
     {
-      LocateComparisons++;
+      LocateComparisons++;//Variável global utilizada para contar as comparações de niveis de cinza
       if (ImageGetPixel(img1, x + i, y + j) != ImageGetPixel(img2, i, j))
       { 
         return 0;
       }
     }
   }
+  
+  
+
+  
+  
   return 1;
 }
 
@@ -606,11 +630,13 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2)
   int height2 = ImageHeight(img2);
   int width2 = ImageWidth(img2);
   
+  //Percorre todos os pixels da imagem 1 e utiliza a função anterior para ver se naquela posição, a imagem 2
+  //está presente
   for (size_t i = 0; i < width1 - width2; i++)
   {
     for (size_t j = 0; j < height1 - height2; j++)
     {
-      LocateComparisons++;
+      LocateComparisons++; //Variável global utilizada para contar as comparações de niveis de cinza
       if (ImageMatchSubImage(img1, i, j, img2))
       {
         *px = i;
@@ -642,14 +668,12 @@ void ImageBlur(Image img, int dx, int dy) {
       return;
     }
 
+    //Percorre todos os pixels e utiliza o filtro (2dx+1)x(2dy+1) sobre eles, atribuindo seus novoso valores
+    //na imagem "newImage", o que certifica que os novos valores nao alteram o calculo para os proximos pixels
     for (size_t i = 0; i < img->width; i++)
     {
-
-      
       for (size_t j = 0; j < img->height; j++)
       {
-
-
         double sum = 0;
         double count = 0;
         int countx = i-dx;
@@ -663,7 +687,7 @@ void ImageBlur(Image img, int dx, int dy) {
         {
           county = 0;
         }         
-
+        //Sequencia de loops para calcular a soma
         for (size_t k = countx; k <= i + dx; k++)
         {
 
@@ -676,7 +700,7 @@ void ImageBlur(Image img, int dx, int dy) {
             }
           }
         }
-        uint8 mean = (uint8)round(sum / count);
+        uint8 mean = (uint8)round(sum / count); //Calcula a média
         if (mean > img->maxval)
         {
           mean = img->maxval;
@@ -686,10 +710,11 @@ void ImageBlur(Image img, int dx, int dy) {
           mean = 0;
         }
         
-        ImageSetPixel(newImage, i, j,mean );
+        ImageSetPixel(newImage, i, j,mean ); //Aplica o filtro
       }
     }
 
+    //Atribui os valores da imagem nova à imagem antiga e deleta a nova imagem
     for (size_t i = 0; i < img->width; i++)
     {
       for (size_t j = 0; j < img->height; j++)
